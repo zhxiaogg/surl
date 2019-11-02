@@ -5,7 +5,6 @@ mod cmds;
 mod server;
 
 use cmds::Cmds;
-use server::HttpServer;
 
 fn main() {
     let cmds = Cmds::parse();

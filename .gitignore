@@ -1,2 +1,3 @@
 /target
 **/*.rs.bk
+curl_help.txt

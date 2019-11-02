@@ -31,7 +31,7 @@ impl RunnableCmd for StartupCmd {
             .serve(new_svc)
             .map_err(|e| eprintln!("server error: {}", e));
 
-        hyper::rt::spawn(server);
+        hyper::rt::run(server);
 
         Ok(())
     }
