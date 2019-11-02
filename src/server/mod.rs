@@ -1,7 +1,14 @@
+use futures::lock::Mutex;
 use hyper::service::{make_service_fn, service_fn};
-use hyper::{Body, Error, Response, Server as HyperServer};
+use hyper::{Body, Error, Method, Request, Response, Server as HyperServer};
+use std::sync::Arc;
 use tokio;
 use tokio::runtime::Runtime;
+
+mod internal;
+use internal::{InternalService, ShutdownHandle};
+use std::time::Duration;
+
 pub struct HttpServer {
     address: String,
     port: u16,
@@ -15,16 +22,33 @@ impl HttpServer {
         }
     }
 
+    pub async fn handler(
+        req: Request<Body>,
+        internal_service: Arc<Mutex<InternalService>>,
+    ) -> Result<Response<Body>, hyper::Error> {
+        match (req.method(), req.uri().path()) {
+            (_, s) if s.starts_with("/s/u/r/l") => {
+                let mut internal_service = internal_service.lock().await;
+                internal_service.process(req).await
+            }
+            _ => Ok(Response::new(Body::from("not found"))),
+        }
+    }
+
     pub fn start_foreground(&mut self) -> Result<(), Box<dyn std::error::Error>> {
-        let (killSender, mut killReceiver) = tokio::sync::oneshot::channel::<()>();
-        let (killedSender, mut killedReceiver) = tokio::sync::oneshot::channel::<()>();
+        let (kill_sender, mut kill_receiver) = tokio::sync::oneshot::channel::<()>();
 
         let addr = ([127, 0, 0, 1], self.port).into();
 
-        let make_service = make_service_fn(|_| {
-            async {
-                Ok::<_, Error>(service_fn(|_req| {
-                    async { Ok::<_, Error>(Response::new(Body::from("Hello World"))) }
+        let shutdown_handle = ShutdownHandle::new(kill_sender);
+        let internal_service = Arc::new(Mutex::new(InternalService::new(shutdown_handle)));
+
+        let make_service = make_service_fn(move |_| {
+            let internal_service = internal_service.clone();
+            async move {
+                Ok::<_, Error>(service_fn(move |req| {
+                    let internal_service = internal_service.clone();
+                    async move { HttpServer::handler(req, internal_service).await }
                 }))
             }
         });
@@ -32,7 +56,9 @@ impl HttpServer {
         let server = HyperServer::bind(&addr).serve(make_service);
 
         let server = server.with_graceful_shutdown(async {
-            killReceiver.await.ok();
+            kill_receiver.await.ok();
+            // sleep 1 second, so that the shutdown request can be responsed timely
+            tokio::timer::delay_for(Duration::from_millis(1000)).await
         });
 
         // Create the runtime
