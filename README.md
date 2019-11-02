@@ -8,6 +8,7 @@ $ scurl -s stop
 $ scurl -s reload -f config.json
 $ scurl -s show
 $ scurl -s save
+$ scurl -s watch
 ```
 
 ## usage examples
