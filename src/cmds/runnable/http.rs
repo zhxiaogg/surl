@@ -1,16 +1,18 @@
-use crate::cmds::cmd::*;
 use super::RunnableCmd;
+use crate::cmds::cmd::*;
 
 pub struct RunnableHttpCmd {
     method: HttpMethod,
-    url:String,
-    response:Option<String>,
+    url: String,
+    response: Option<String>,
 }
 
 impl RunnableHttpCmd {
-    pub fn new(method:HttpMethod, url:String, response:Option<String>) -> RunnableHttpCmd {
+    pub fn new(method: HttpMethod, url: String, response: Option<String>) -> RunnableHttpCmd {
         RunnableHttpCmd {
-            method,url,response
+            method,
+            url,
+            response,
         }
     }
 }
@@ -18,7 +20,7 @@ impl RunnableHttpCmd {
 impl RunnableCmd for RunnableHttpCmd {
     fn run(&mut self) -> Result<(), String> {
         // TODO: create a new HTTP mock in server side
-        println!("{:?} {} {:?}", self.method,self.url,self.response);
+        println!("{:?} {} {:?}", self.method, self.url, self.response);
         Ok(())
     }
 }

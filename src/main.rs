@@ -1,5 +1,4 @@
-extern crate clap;
-extern crate hyper;
+#![feature(async_closure)]
 
 mod cmds;
 mod server;

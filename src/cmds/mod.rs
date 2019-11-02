@@ -52,14 +52,14 @@ impl Cmds {
             Cmd::HttpCmd {
                 method,
                 url,
-                response
-            } => Box::new(RunnableHttpCmd::new(method,url,response)),
+                response,
+            } => Box::new(RunnableHttpCmd::new(method, url, response)),
             c => {
                 println!("unrecognized cmd: {:?}", c);
                 Box::new(RunnableUnknown {
-                app: Cmds::create_app(),
-            })
-            },
+                    app: Cmds::create_app(),
+                })
+            }
         }
     }
 
