@@ -1,14 +1,49 @@
+mod startup;
+
 use clap::App;
 use clap::Arg;
 
+use startup::StartupCmd;
+
+use std::result::Result;
+use ServerCmdName::*;
+
 pub enum Cmd {
     Server {
-        name: String,
-        config: Option<String>,
+        name: ServerCmdName,
+        config: String,
+        port: u16,
     },
-    Unknown {
-        app: App<'static, 'static>,
-    },
+    Unknown,
+}
+
+pub enum ServerCmdName {
+    Start,
+    Unknown,
+}
+
+impl ServerCmdName {
+    fn from(name: &str) -> ServerCmdName {
+        match name {
+            "start" => ServerCmdName::Start,
+            _ => ServerCmdName::Unknown,
+        }
+    }
+}
+
+pub trait RunnableCmd {
+    fn run(&mut self) -> Result<(), String>;
+}
+
+struct RunnableUnknown {
+    app: App<'static, 'static>,
+}
+
+impl RunnableCmd for RunnableUnknown {
+    fn run(&mut self) -> Result<(), String> {
+        self.app.print_help().unwrap();
+        Result::Ok(())
+    }
 }
 
 pub struct Cmds {
@@ -22,16 +57,29 @@ impl Cmds {
         if let Some(name) = matcher.value_of("server") {
             Cmds {
                 cmd: Cmd::Server {
-                    name: name.to_owned(),
-                    config: matcher.value_of("config").map(|s| s.to_owned()),
+                    name: ServerCmdName::from(name),
+                    config: matcher.value_of("config").unwrap().to_owned(),
+                    port: matcher
+                        .value_of("port")
+                        .map(|s| s.parse::<u16>().unwrap())
+                        .unwrap(),
                 },
             }
         } else {
-            Cmds {
-                cmd: Cmd::Unknown {
-                    app: Cmds::create_app(),
-                },
-            }
+            Cmds { cmd: Cmd::Unknown }
+        }
+    }
+
+    pub fn runnable_cmd(self) -> Box<dyn RunnableCmd> {
+        match self.cmd {
+            Cmd::Server {
+                name: Start,
+                config,
+                port,
+            } => Box::new(StartupCmd::new(config, port)),
+            _ => Box::new(RunnableUnknown {
+                app: Cmds::create_app(),
+            }),
         }
     }
 
@@ -46,6 +94,17 @@ impl Cmds {
                     .long("server")
                     .value_name("cmd")
                     .help("run server directives: start|stop|reload|show|watch")
+                    .required(false)
+                    .takes_value(true),
+            )
+            .arg(
+                Arg::with_name("port")
+                    .short("p")
+                    .long("port")
+                    .value_name("port")
+                    .default_value("7575")
+                    .help("deamon http server listen port")
+                    .required(false)
                     .takes_value(true),
             )
             .arg(
@@ -54,8 +113,8 @@ impl Cmds {
                     .long("config")
                     .value_name("config.json")
                     .default_value("./config.json")
-                    .required(false)
                     .help("configuration file path")
+                    .required(false)
                     .takes_value(true),
             )
     }

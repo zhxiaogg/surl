@@ -1,13 +1,14 @@
 extern crate clap;
+extern crate hyper;
 
 mod cmds;
+mod server;
 
-use cmds::{Cmd, Cmds};
+use cmds::Cmds;
+use server::HttpServer;
 
 fn main() {
     let cmds = Cmds::parse();
-    match cmds.cmd {
-        Cmd::Server { name, config: _ } => println!("run cmd {}!", name),
-        Cmd::Unknown { mut app } => app.print_help().unwrap(),
-    }
+    let mut runnable = cmds.runnable_cmd();
+    runnable.as_mut().run().unwrap();
 }
