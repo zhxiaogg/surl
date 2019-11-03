@@ -5,7 +5,9 @@ use std::sync::Arc;
 use tokio;
 use tokio::runtime::Runtime;
 
+mod container;
 mod internal;
+use container::ServiceContainer;
 use internal::{InternalService, ShutdownHandle};
 use std::time::Duration;
 
@@ -25,13 +27,17 @@ impl HttpServer {
     pub async fn handler(
         req: Request<Body>,
         internal_service: Arc<Mutex<InternalService>>,
+        service_container: Arc<Mutex<ServiceContainer>>,
     ) -> Result<Response<Body>, hyper::Error> {
         match (req.method(), req.uri().path()) {
             (_, s) if s.starts_with("/s/u/r/l") => {
                 let mut internal_service = internal_service.lock().await;
                 internal_service.process(req).await
             }
-            _ => Ok(Response::new(Body::from("not found"))),
+            _ => {
+                let mut service_container = service_container.lock().await;
+                service_container.process(req).await
+            }
         }
     }
 
@@ -41,14 +47,20 @@ impl HttpServer {
         let addr = ([127, 0, 0, 1], self.port).into();
 
         let shutdown_handle = ShutdownHandle::new(kill_sender);
-        let internal_service = Arc::new(Mutex::new(InternalService::new(shutdown_handle)));
+        let service_container = Arc::new(Mutex::new(ServiceContainer::new()));
+        let internal_service = Arc::new(Mutex::new(InternalService::new(
+            shutdown_handle,
+            service_container.clone(),
+        )));
 
         let make_service = make_service_fn(move |_| {
             let internal_service = internal_service.clone();
+            let service_container = service_container.clone();
             async move {
                 Ok::<_, Error>(service_fn(move |req| {
                     let internal_service = internal_service.clone();
-                    async move { HttpServer::handler(req, internal_service).await }
+                    let service_container = service_container.clone();
+                    async move { HttpServer::handler(req, internal_service, service_container).await }
                 }))
             }
         });

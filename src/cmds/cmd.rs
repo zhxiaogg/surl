@@ -1,3 +1,5 @@
+use serde::{Deserialize, Serialize};
+use std::fmt;
 #[derive(Debug)]
 pub enum Cmd {
     ServerCmd {
@@ -13,25 +15,48 @@ pub enum Cmd {
     Unknown,
 }
 
-#[derive(Debug)]
+#[derive(Serialize, Deserialize, Debug)]
+pub struct HttpServiceInfo {
+    pub method: HttpMethod,
+    pub url: String,
+    pub response: Option<String>,
+}
+
+impl HttpServiceInfo {
+    pub fn new(method: HttpMethod, url: String, response: Option<String>) -> HttpServiceInfo {
+        HttpServiceInfo {
+            method,
+            url,
+            response,
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug)]
 pub enum HttpMethod {
-    Get,
-    Post,
-    Update,
-    Delete,
-    Unknown,
+    GET,
+    POST,
+    UPDATE,
+    DELETE,
+    UNKNOWN,
 }
 
 impl HttpMethod {
     pub fn from(name: &str) -> HttpMethod {
         use HttpMethod::*;
         match name.to_uppercase().as_ref() {
-            "GET" => Get,
-            "POST" => Post,
-            "UPDATE" => Update,
-            "DELETE" => Delete,
-            _ => Unknown,
+            "GET" => GET,
+            "POST" => POST,
+            "UPDATE" => UPDATE,
+            "DELETE" => DELETE,
+            _ => UNKNOWN,
         }
+    }
+}
+
+impl fmt::Display for HttpMethod {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{:?}", self)
     }
 }
 

@@ -2,6 +2,7 @@
 
 mod cmds;
 mod server;
+mod utils;
 
 use cmds::Cmds;
 

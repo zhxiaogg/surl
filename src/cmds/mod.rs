@@ -53,7 +53,9 @@ impl Cmds {
                 method,
                 url,
                 response,
-            } => Box::new(RunnableHttpCmd::new(method, url, response)),
+            } => Box::new(RunnableHttpCmd::new(HttpServiceInfo::new(
+                method, url, response,
+            ))),
             c => {
                 println!("unrecognized cmd: {:?}", c);
                 Box::new(RunnableUnknown {
