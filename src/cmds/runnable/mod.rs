@@ -3,7 +3,7 @@ mod startup;
 
 use clap::App;
 
-pub use http::RunnableHttpCmd;
+pub use self::http::RunnableHttpCmd;
 pub use startup::StartupCmd;
 
 pub trait RunnableCmd {

@@ -1,6 +1,7 @@
 use crate::cmds::cmd::HttpServiceInfo;
 use crate::utils::http::*;
-use hyper::{Body, Error, Method, Request, Response, Server as HyperServer, StatusCode};
+use http::Uri;
+use hyper::{Body, Request, Response, StatusCode};
 use std::collections::linked_list::LinkedList;
 
 pub struct ServiceContainer {
@@ -26,14 +27,31 @@ impl ServiceContainer {
         {
             Some(service) => Ok(Response::builder()
                 .status(StatusCode::OK)
-                .body(Body::from(service.url.as_str().to_owned()))
+                .body(self.body(service, &req))
                 .unwrap()),
             _ => not_found(),
         }
     }
 
+    fn body(&self, service: &HttpServiceInfo, req: &Request<Body>) -> Body {
+        let response = service
+            .response
+            .as_ref()
+            .map_or("", String::as_str)
+            .to_owned();
+        Body::from(response)
+    }
+
     fn service_match(service: &HttpServiceInfo, req: &Request<Body>) -> bool {
         let method_match = service.method.to_string() == req.method().as_str();
-        method_match
+        let uri = if service.url.contains("://") {
+            service.url.parse::<Uri>().unwrap()
+        } else {
+            let url = format!("http://{}", service.url);
+            let s: &str = url.as_ref();
+            s.parse::<Uri>().unwrap()
+        };
+        let uri_match = uri.path() == req.uri().path();
+        method_match && uri_match
     }
 }
