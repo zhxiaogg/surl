@@ -1,5 +1,6 @@
 use super::RunnableCmd;
 use crate::cmds::cmd::*;
+use http::Uri;
 use hyper::{Body, Client, Request, StatusCode};
 use serde::{Deserialize, Serialize};
 use serde_json;
@@ -28,11 +29,12 @@ impl RunnableCmd for RunnableHttpCmd {
         let json = serde_json::to_string(&self.httpServiceInfo)
             .map_err(|e| format!("serialize failed:{}", e))?;
 
+        let port = self.httpServiceInfo.port();
+        let url = format!("http://localhost:{}/s/u/r/l/http", port);
+        let url: &str = url.as_ref();
         let resp = rt
             .block_on(async {
-                let mut req = Request::post("http://localhost:7575/s/u/r/l/http")
-                    .body(Body::from(json))
-                    .unwrap();
+                let mut req = Request::post(url).body(Body::from(json)).unwrap();
                 Client::new().request(req).await
             })
             .map_err(|e| {

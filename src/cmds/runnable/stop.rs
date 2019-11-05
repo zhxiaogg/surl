@@ -20,11 +20,11 @@ impl RunnableCmd for StopCmd {
             "create tokio runtime failed.".to_owned()
         })?;
 
+        let url = format!("http://localhost:{}/s/u/r/l/stop", self.port);
+        let url: &str = url.as_ref();
         let resp = rt
             .block_on(async {
-                let req = Request::post("http://localhost:7575/s/u/r/l/stop")
-                    .body(Body::empty())
-                    .unwrap();
+                let req = Request::post(url).body(Body::empty()).unwrap();
                 Client::new().request(req).await
             })
             .map_err(|e| {

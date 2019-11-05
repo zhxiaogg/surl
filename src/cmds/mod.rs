@@ -127,7 +127,7 @@ impl Cmds {
                     .short("p")
                     .long("port")
                     .takes_value(true)
-                    .default_value("7575")
+                    .default_value("8080")
                     .value_name("PORT")
                     .required(false)
                     .help("binding port"),

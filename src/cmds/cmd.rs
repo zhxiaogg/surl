@@ -1,5 +1,7 @@
+use http::Uri;
 use serde::{Deserialize, Serialize};
 use std::fmt;
+
 #[derive(Debug)]
 pub enum Cmd {
     ServerCmd {
@@ -29,6 +31,17 @@ impl HttpServiceInfo {
             url,
             response,
         }
+    }
+
+    pub fn port(&self) -> u16 {
+        let uri = if self.url.contains("://") {
+            self.url.parse::<Uri>().unwrap()
+        } else {
+            let url = format!("http://{}", self.url);
+            let s: &str = url.as_ref();
+            s.parse::<Uri>().unwrap()
+        };
+        uri.port_u16().unwrap_or(80)
     }
 }
 
