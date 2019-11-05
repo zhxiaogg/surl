@@ -1,8 +1,7 @@
 pub mod cmd;
 mod runnable;
 
-use clap::App;
-use clap::Arg;
+use clap::{App, Arg, SubCommand};
 
 use runnable::{StartupCmd, StopCmd};
 
@@ -18,16 +17,21 @@ impl Cmds {
     pub fn parse() -> Cmds {
         let matcher = Cmds::create_app().get_matches();
 
-        if let Some(name) = matcher.value_of("server") {
-            Cmds {
-                cmd: Cmd::ServerCmd {
-                    name: ServerCmdName::from(name),
-                    config: matcher.value_of("config").unwrap().to_owned(),
-                    port: matcher
-                        .value_of("port")
-                        .map(|s| s.parse::<u16>().unwrap())
-                        .unwrap(),
-                },
+        if let Some(srever_cmd) = matcher.subcommand_matches("server") {
+            if let Some(name) = srever_cmd.value_of("cmd") {
+                Cmds {
+                    cmd: Cmd::ServerCmd {
+                        name: ServerCmdName::from(name),
+                        config: "".to_owned(),
+                        port: srever_cmd
+                            .value_of("port")
+                            .map(|s| s.parse::<u16>().unwrap())
+                            .unwrap(),
+                    },
+                }
+            } else {
+                // unknown server cmd
+                Cmds { cmd: Cmd::Unknown }
             }
         } else if let Some(method) = matcher.value_of("request") {
             Cmds {
@@ -109,34 +113,25 @@ impl Cmds {
     }
 
     fn add_server_directives(app: App<'static, 'static>) -> App<'static, 'static> {
-        app.arg(
-            Arg::with_name("server")
-                .short("s")
-                .long("server")
-                .value_name("cmd")
-                .help("run server directives: start|stop|reload|show|watch")
-                .required(false)
-                .takes_value(true),
-        )
-        .arg(
-            Arg::with_name("port")
-                .short("p")
-                .long("port")
-                .value_name("port")
-                .default_value("7575")
-                .help("deamon http server listen port")
-                .required(false)
-                .takes_value(true),
-        )
-        .arg(
-            Arg::with_name("config")
-                .short("f")
-                .long("config")
-                .value_name("config.json")
-                .default_value("./config.json")
-                .help("configuration file path")
-                .required(false)
-                .takes_value(true),
-        )
+        let sub_cmd = SubCommand::with_name("server")
+            .about("talk to deamon server")
+            .version("0.1.0")
+            .arg(
+                Arg::with_name("cmd")
+                    .value_name("CMD")
+                    .takes_value(true)
+                    .help("run server cmds: start|stop"),
+            )
+            .arg(
+                Arg::with_name("port")
+                    .short("p")
+                    .long("port")
+                    .takes_value(true)
+                    .default_value("7575")
+                    .value_name("PORT")
+                    .required(false)
+                    .help("binding port"),
+            );
+        app.subcommand(sub_cmd)
     }
 }
