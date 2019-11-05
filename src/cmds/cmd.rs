@@ -63,6 +63,7 @@ impl fmt::Display for HttpMethod {
 #[derive(Debug)]
 pub enum ServerCmdName {
     Start,
+    Stop,
     Unknown,
 }
 
@@ -70,6 +71,7 @@ impl ServerCmdName {
     pub fn from(name: &str) -> ServerCmdName {
         match name {
             "start" => ServerCmdName::Start,
+            "stop" => ServerCmdName::Stop,
             _ => ServerCmdName::Unknown,
         }
     }

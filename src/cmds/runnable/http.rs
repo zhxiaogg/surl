@@ -1,6 +1,6 @@
 use super::RunnableCmd;
 use crate::cmds::cmd::*;
-use hyper::{Body, Client, Request, Response, StatusCode, Uri};
+use hyper::{Body, Client, Request, StatusCode};
 use serde::{Deserialize, Serialize};
 use serde_json;
 use tokio::runtime::Runtime;

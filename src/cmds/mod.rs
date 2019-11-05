@@ -4,7 +4,7 @@ mod runnable;
 use clap::App;
 use clap::Arg;
 
-use runnable::StartupCmd;
+use runnable::{StartupCmd, StopCmd};
 
 use cmd::ServerCmdName::*;
 use cmd::*;
@@ -49,6 +49,11 @@ impl Cmds {
                 config,
                 port,
             } => Box::new(StartupCmd::new(config, port)),
+            Cmd::ServerCmd {
+                name: Stop,
+                config,
+                port,
+            } => Box::new(StopCmd::new(config, port)),
             Cmd::HttpCmd {
                 method,
                 url,
