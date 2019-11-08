@@ -1,13 +1,30 @@
 use super::RunnableCmd;
-use crate::cmds::cmd::*;
+use http::Uri;
 use hyper::{Body, Client, Request, StatusCode};
 use serde::{Deserialize, Serialize};
 use serde_json;
+use std::fmt;
 use tokio::runtime::Runtime;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct RunnableHttpCmd {
     http_service_info: HttpServiceInfo,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct HttpServiceInfo {
+    pub method: HttpMethod,
+    pub url: String,
+    pub response: Option<String>,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub enum HttpMethod {
+    GET,
+    POST,
+    UPDATE,
+    DELETE,
+    UNKNOWN,
 }
 
 impl RunnableHttpCmd {
@@ -46,5 +63,45 @@ impl RunnableCmd for RunnableHttpCmd {
             StatusCode::OK => Ok(()),
             c => Err(format!("create cmd failed, status code: {}", c)),
         }
+    }
+}
+
+impl HttpServiceInfo {
+    pub fn new(method: HttpMethod, url: String, response: Option<String>) -> HttpServiceInfo {
+        HttpServiceInfo {
+            method,
+            url,
+            response,
+        }
+    }
+
+    pub fn port(&self) -> u16 {
+        let uri = if self.url.contains("://") {
+            self.url.parse::<Uri>().unwrap()
+        } else {
+            let url = format!("http://{}", self.url);
+            let s: &str = url.as_ref();
+            s.parse::<Uri>().unwrap()
+        };
+        uri.port_u16().unwrap_or(80)
+    }
+}
+
+impl HttpMethod {
+    pub fn from(name: &str) -> HttpMethod {
+        use HttpMethod::*;
+        match name.to_uppercase().as_ref() {
+            "GET" => GET,
+            "POST" => POST,
+            "UPDATE" => UPDATE,
+            "DELETE" => DELETE,
+            _ => UNKNOWN,
+        }
+    }
+}
+
+impl fmt::Display for HttpMethod {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{:?}", self)
     }
 }

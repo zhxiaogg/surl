@@ -1,4 +1,4 @@
-use super::RunnableCmd;
+use crate::cmds::RunnableCmd;
 use hyper::{Body, Client, Request, StatusCode};
 use tokio::runtime::Runtime;
 

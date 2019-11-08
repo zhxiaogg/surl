@@ -7,7 +7,6 @@ mod utils;
 use cmds::Cmds;
 
 fn main() {
-    let cmds = Cmds::parse();
-    let mut runnable = cmds.runnable_cmd();
+    let mut runnable = Cmds::parse();
     runnable.as_mut().run().unwrap();
 }

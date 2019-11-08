@@ -1,76 +1,52 @@
-pub mod cmd;
-mod runnable;
-
 use clap::{App, Arg, SubCommand};
 
-use runnable::{StartupCmd, StopCmd};
+mod server;
+use server::create_server_cmd;
+pub mod http;
+use self::http::*;
 
-use cmd::ServerCmdName::*;
-use cmd::*;
-use runnable::*;
-
-pub struct Cmds {
-    pub cmd: Cmd,
+pub trait RunnableCmd {
+    fn run(&mut self) -> Result<(), String>;
 }
 
+struct RunnableUnknown {
+    pub app: App<'static, 'static>,
+}
+
+impl RunnableUnknown {
+    fn new(app: App<'static, 'static>) -> RunnableUnknown {
+        RunnableUnknown { app }
+    }
+}
+
+impl RunnableCmd for RunnableUnknown {
+    fn run(&mut self) -> Result<(), String> {
+        self.app.print_help().unwrap();
+        Result::Ok(())
+    }
+}
+
+pub struct Cmds {}
+
 impl Cmds {
-    pub fn parse() -> Cmds {
+    pub fn parse() -> Box<dyn RunnableCmd> {
         let matcher = Cmds::create_app().get_matches();
 
         if let Some(srever_cmd) = matcher.subcommand_matches("server") {
-            if let Some(name) = srever_cmd.value_of("cmd") {
-                Cmds {
-                    cmd: Cmd::ServerCmd {
-                        name: ServerCmdName::from(name),
-                        config: "".to_owned(),
-                        port: srever_cmd
-                            .value_of("port")
-                            .map(|s| s.parse::<u16>().unwrap())
-                            .unwrap(),
-                    },
-                }
-            } else {
-                // unknown server cmd
-                Cmds { cmd: Cmd::Unknown }
-            }
+            let cmd_name_opt = srever_cmd.value_of("cmd").map(|s| s.to_owned());
+            let port = srever_cmd
+                .value_of("port")
+                .map(|s| s.parse::<u16>().unwrap())
+                .unwrap();
+            create_server_cmd(cmd_name_opt, port)
         } else if let Some(method) = matcher.value_of("request") {
-            Cmds {
-                cmd: Cmd::HttpCmd {
-                    method: HttpMethod::from(method),
-                    url: matcher.value_of("url").unwrap().to_owned(),
-                    response: matcher.value_of("data").map(|s| s.to_owned()),
-                },
-            }
+            let method = HttpMethod::from(method);
+            let url = matcher.value_of("url").unwrap().to_owned();
+            let response = matcher.value_of("data").map(|s| s.to_owned());
+            let http_service_info = HttpServiceInfo::new(method, url, response);
+            Box::new(RunnableHttpCmd::new(http_service_info))
         } else {
-            Cmds { cmd: Cmd::Unknown }
-        }
-    }
-
-    pub fn runnable_cmd(self) -> Box<dyn RunnableCmd> {
-        match self.cmd {
-            Cmd::ServerCmd {
-                name: Start,
-                config,
-                port,
-            } => Box::new(StartupCmd::new(config, port)),
-            Cmd::ServerCmd {
-                name: Stop,
-                config,
-                port,
-            } => Box::new(StopCmd::new(config, port)),
-            Cmd::HttpCmd {
-                method,
-                url,
-                response,
-            } => Box::new(RunnableHttpCmd::new(HttpServiceInfo::new(
-                method, url, response,
-            ))),
-            c => {
-                println!("unrecognized cmd: {:?}", c);
-                Box::new(RunnableUnknown {
-                    app: Cmds::create_app(),
-                })
-            }
+            Box::new(RunnableUnknown::new(Cmds::create_app()))
         }
     }
 
@@ -91,6 +67,7 @@ impl Cmds {
                 .long("request")
                 .value_name("METHOD")
                 .help("http methods: GET|POST|UPDATE|DELETE")
+                .default_value("GET")
                 .required(false)
                 .takes_value(true),
         )

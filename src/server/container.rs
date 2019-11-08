@@ -1,4 +1,4 @@
-use crate::cmds::cmd::HttpServiceInfo;
+use crate::cmds::http::HttpServiceInfo;
 use crate::utils::http::*;
 use http::Uri;
 use hyper::{Body, Request, Response, StatusCode};
