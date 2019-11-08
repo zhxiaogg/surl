@@ -25,15 +25,20 @@ impl ServiceContainer {
             .iter()
             .find(|&service| ServiceContainer::service_match(service, &req))
         {
-            Some(service) => Ok(Response::builder()
-                .status(StatusCode::OK)
-                .body(self.body(service, &req))
-                .unwrap()),
+            Some(service) => self.create_response(service),
             _ => not_found(),
         }
     }
 
-    fn body(&self, service: &HttpServiceInfo, req: &Request<Body>) -> Body {
+    fn create_response(&self, service: &HttpServiceInfo) -> Result<Response<Body>, hyper::Error> {
+        let mut b = Response::builder();
+        for (k, v) in service.headers.iter() {
+            b.header(k.trim(), v.as_ref().map_or("", String::as_ref).trim());
+        }
+        Ok(b.status(StatusCode::OK).body(self.body(service)).unwrap())
+    }
+
+    fn body(&self, service: &HttpServiceInfo) -> Body {
         let response = service
             .response
             .as_ref()

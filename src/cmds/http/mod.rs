@@ -3,6 +3,8 @@ use http::{Method, Uri};
 use hyper::{Body, Client, Request, StatusCode};
 use serde::{Deserialize, Serialize};
 use serde_json;
+use std::collections::BTreeMap;
+use std::iter::Iterator;
 use std::str::FromStr;
 use tokio::runtime::Runtime;
 
@@ -16,6 +18,7 @@ pub struct HttpServiceInfo {
     pub method: String,
     pub url: String,
     pub response: Option<String>,
+    pub headers: BTreeMap<String, Option<String>>,
 }
 
 impl RunnableHttpCmd {
@@ -58,12 +61,40 @@ impl RunnableCmd for RunnableHttpCmd {
 }
 
 impl HttpServiceInfo {
-    pub fn new(method_str: &str, url: String, response: Option<String>) -> HttpServiceInfo {
+    pub fn new(
+        method_str: &str,
+        url: String,
+        response: Option<String>,
+        header: Option<&str>,
+    ) -> HttpServiceInfo {
         let method = Method::from_str(method_str).unwrap().as_ref().to_owned();
+        let headers: BTreeMap<String, Option<String>> = HttpServiceInfo::create_header(header);
         HttpServiceInfo {
             method,
             url,
             response,
+            headers,
+        }
+    }
+
+    fn create_header(header: Option<&str>) -> BTreeMap<String, Option<String>> {
+        match header {
+            Some(h) => {
+                let mut m = BTreeMap::new();
+                h.split(";")
+                    .map(|s| {
+                        let kv = s.splitn(2, ":").collect::<Vec<&str>>();
+                        let k = kv.get(0).unwrap().trim().to_string();
+                        let v = kv.get(1).map(|s| s.to_string());
+                        (k, v)
+                    })
+                    .filter(|(k, _)| k.len() > 0)
+                    .for_each(|(k, v)| {
+                        m.insert(k, v);
+                    });
+                m
+            }
+            None => BTreeMap::new(),
         }
     }
 

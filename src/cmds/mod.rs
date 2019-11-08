@@ -24,7 +24,8 @@ pub fn parse_cmd() -> Box<dyn RunnableCmd> {
     } else if let Some(method) = matcher.value_of("request") {
         let url = matcher.value_of("url").unwrap().to_owned();
         let response = matcher.value_of("data").map(|s| s.to_owned());
-        let http_service_info = HttpServiceInfo::new(method, url, response);
+        let header = matcher.value_of("header");
+        let http_service_info = HttpServiceInfo::new(method, url, response, header);
         Box::new(RunnableHttpCmd::new(http_service_info))
     } else {
         Box::new(RunnableUnknown::new(create_app()))
@@ -65,6 +66,15 @@ fn add_http_directives(app: App<'static, 'static>) -> App<'static, 'static> {
             .long("data")
             .value_name("DATA")
             .help("expected response data, could be string or file (starts with `@`)")
+            .required(false)
+            .takes_value(true),
+    )
+    .arg(
+        Arg::with_name("header")
+            .short("H")
+            .long("header")
+            .value_name("LINE")
+            .help("response with custom headers")
             .required(false)
             .takes_value(true),
     )

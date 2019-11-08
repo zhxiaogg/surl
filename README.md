@@ -17,8 +17,8 @@ $ surl server watch (TODO)
 # mock a GET api that responses with a `OK`
 $ surl -XGET localhost:8080/api/health -d'OK'
 
-# mock a POST api that responses a json object
-$ surl -XPOST localhost:8080/api/items/2 -d'{"id": 2}'
+# mock a POST api that responses a json object and `content-type` header
+$ surl -XPOST -H'Content-Type:application/json' localhost:8080/api/items/2 -d'{"id": 2}'
 
 # mock a POST api that responses the original post payload, using jsonpath (TODO)
 $ surl -XPOST -d'$.' localhost:8080/api/items
