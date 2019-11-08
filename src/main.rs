@@ -4,9 +4,9 @@ mod cmds;
 mod server;
 mod utils;
 
-use cmds::Cmds;
+use cmds::parse_cmd;
 
 fn main() {
-    let mut runnable = Cmds::parse();
+    let mut runnable = parse_cmd();
     runnable.as_mut().run().unwrap();
 }
