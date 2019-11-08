@@ -22,7 +22,6 @@ pub fn parse_cmd() -> Box<dyn RunnableCmd> {
             .unwrap();
         create_server_cmd(cmd_name_opt, port)
     } else if let Some(method) = matcher.value_of("request") {
-        let method = HttpMethod::from(method);
         let url = matcher.value_of("url").unwrap().to_owned();
         let response = matcher.value_of("data").map(|s| s.to_owned());
         let http_service_info = HttpServiceInfo::new(method, url, response);

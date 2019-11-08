@@ -1,9 +1,9 @@
 use super::RunnableCmd;
-use http::Uri;
+use http::{Method, Uri};
 use hyper::{Body, Client, Request, StatusCode};
 use serde::{Deserialize, Serialize};
 use serde_json;
-use std::fmt;
+use std::str::FromStr;
 use tokio::runtime::Runtime;
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -13,18 +13,9 @@ pub struct RunnableHttpCmd {
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct HttpServiceInfo {
-    pub method: HttpMethod,
+    pub method: String,
     pub url: String,
     pub response: Option<String>,
-}
-
-#[derive(Serialize, Deserialize, Debug)]
-pub enum HttpMethod {
-    GET,
-    POST,
-    UPDATE,
-    DELETE,
-    UNKNOWN,
 }
 
 impl RunnableHttpCmd {
@@ -67,7 +58,8 @@ impl RunnableCmd for RunnableHttpCmd {
 }
 
 impl HttpServiceInfo {
-    pub fn new(method: HttpMethod, url: String, response: Option<String>) -> HttpServiceInfo {
+    pub fn new(method_str: &str, url: String, response: Option<String>) -> HttpServiceInfo {
+        let method = Method::from_str(method_str).unwrap().as_ref().to_owned();
         HttpServiceInfo {
             method,
             url,
@@ -84,24 +76,5 @@ impl HttpServiceInfo {
             s.parse::<Uri>().unwrap()
         };
         uri.port_u16().unwrap_or(80)
-    }
-}
-
-impl HttpMethod {
-    pub fn from(name: &str) -> HttpMethod {
-        use HttpMethod::*;
-        match name.to_uppercase().as_ref() {
-            "GET" => GET,
-            "POST" => POST,
-            "UPDATE" => UPDATE,
-            "DELETE" => DELETE,
-            _ => UNKNOWN,
-        }
-    }
-}
-
-impl fmt::Display for HttpMethod {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{:?}", self)
     }
 }
