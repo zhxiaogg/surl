@@ -1,6 +1,4 @@
-use hyper::{Body, Error, Method, Request, Response, Server as HyperServer, StatusCode};
-use serde::{Deserialize, Serialize};
-use serde_json::Result as SerdeResult;
+use hyper::{Body, Response, StatusCode};
 
 pub async fn body_to_str(body: &mut Body) -> Option<String> {
     match body.next().await {

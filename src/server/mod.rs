@@ -1,6 +1,6 @@
 use futures::lock::Mutex;
 use hyper::service::{make_service_fn, service_fn};
-use hyper::{Body, Error, Method, Request, Response, Server as HyperServer};
+use hyper::{Body, Error, Request, Response, Server as HyperServer};
 use std::sync::Arc;
 use tokio;
 use tokio::runtime::Runtime;
