@@ -10,6 +10,7 @@ mod internal;
 use container::ServiceContainer;
 use internal::{InternalService, ShutdownHandle};
 use std::time::Duration;
+mod tpl;
 
 pub struct HttpServer {
     address: String,
