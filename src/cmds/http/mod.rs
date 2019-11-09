@@ -21,9 +21,23 @@ pub struct HttpServiceInfo {
     pub headers: BTreeMap<String, Option<String>>,
 }
 
+#[derive(PartialEq, Eq, Hash)]
+pub struct HttpServiceId {
+    method: String,
+    uri: String,
+}
+
 impl RunnableHttpCmd {
     pub fn new(http_service_info: HttpServiceInfo) -> RunnableHttpCmd {
         RunnableHttpCmd { http_service_info }
+    }
+}
+
+impl HttpServiceId {
+    pub fn from(req: &Request<Body>) -> HttpServiceId {
+        let uri = req.uri().path().to_owned();
+        let method = req.method().as_str().to_owned();
+        HttpServiceId { method, uri }
     }
 }
 
@@ -77,6 +91,13 @@ impl HttpServiceInfo {
         }
     }
 
+    pub fn id(&self) -> HttpServiceId {
+        HttpServiceId {
+            method: self.method.to_owned(),
+            uri: self.uri().path().to_owned(),
+        }
+    }
+
     fn create_header(header: Option<&str>) -> BTreeMap<String, Option<String>> {
         match header {
             Some(h) => {
@@ -98,14 +119,18 @@ impl HttpServiceInfo {
         }
     }
 
-    pub fn port(&self) -> u16 {
-        let uri = if self.url.contains("://") {
+    pub fn uri(&self) -> Uri {
+        if self.url.contains("://") {
             self.url.parse::<Uri>().unwrap()
         } else {
             let url = format!("http://{}", self.url);
             let s: &str = url.as_ref();
             s.parse::<Uri>().unwrap()
-        };
+        }
+    }
+
+    pub fn port(&self) -> u16 {
+        let uri = self.uri();
         uri.port_u16().unwrap_or(80)
     }
 }

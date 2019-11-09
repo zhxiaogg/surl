@@ -1,30 +1,26 @@
-use crate::cmds::http::HttpServiceInfo;
+use crate::cmds::http::{HttpServiceId, HttpServiceInfo};
 use crate::utils::http::*;
-use http::Uri;
 use hyper::{Body, Request, Response, StatusCode};
-use std::collections::linked_list::LinkedList;
+use std::collections::HashMap;
 
 pub struct ServiceContainer {
-    service_infos: LinkedList<HttpServiceInfo>,
+    service_infos: HashMap<HttpServiceId, HttpServiceInfo>,
 }
 
 impl ServiceContainer {
     pub fn new() -> ServiceContainer {
         ServiceContainer {
-            service_infos: LinkedList::new(),
+            service_infos: HashMap::new(),
         }
     }
 
     pub fn add_service(&mut self, service_info: HttpServiceInfo) -> () {
-        self.service_infos.push_back(service_info);
+        self.service_infos.insert(service_info.id(), service_info);
     }
 
     pub async fn process(&mut self, req: Request<Body>) -> Result<Response<Body>, hyper::Error> {
-        match self
-            .service_infos
-            .iter()
-            .find(|&service| ServiceContainer::service_match(service, &req))
-        {
+        let id = HttpServiceId::from(&req);
+        match self.service_infos.get(&id) {
             Some(service) => self.create_response(service),
             _ => not_found(),
         }
@@ -45,18 +41,5 @@ impl ServiceContainer {
             .map_or("", String::as_str)
             .to_owned();
         Body::from(response)
-    }
-
-    fn service_match(service: &HttpServiceInfo, req: &Request<Body>) -> bool {
-        let method_match = service.method.to_string() == req.method().as_str();
-        let uri = if service.url.contains("://") {
-            service.url.parse::<Uri>().unwrap()
-        } else {
-            let url = format!("http://{}", service.url);
-            let s: &str = url.as_ref();
-            s.parse::<Uri>().unwrap()
-        };
-        let uri_match = uri.path() == req.uri().path();
-        method_match && uri_match
     }
 }
