@@ -1,7 +1,10 @@
+use crate::utils::http::*;
+use crate::utils::tpl::to_json;
 use handlebars::Handlebars;
 use http::{Request, Uri};
 use hyper::Body;
 use serde::Serialize;
+use serde_json::json;
 use serde_json::Value;
 use std::collections::BTreeMap;
 
@@ -13,11 +16,18 @@ pub struct RequestContext {
 }
 
 impl RequestContext {
-    pub fn new(request: &Request<Body>) -> RequestContext {
+    pub async fn new(request: Request<Body>) -> RequestContext {
+        let (parts, mut body) = request.into_parts();
+        let body = body_to_str(&mut body).await;
+        let body = body
+            .map(|ref s| serde_json::from_str::<Value>(s).ok())
+            .flatten();
+        let params = decode_query_params(&parts.uri);
+        let path_variables = decode_path_variables(&parts.uri);
         RequestContext {
-            body: None,
-            path: decode_path_variables(request.uri()),
-            params: decode_query_params(request.uri()),
+            body: body,
+            path: path_variables,
+            params: params,
         }
     }
 }
@@ -26,39 +36,15 @@ fn decode_path_variables(uri: &Uri) -> BTreeMap<String, String> {
     BTreeMap::new()
 }
 
-fn decode_query_params(uri: &Uri) -> BTreeMap<String, String> {
-    match uri.query() {
-        Some(query) => {
-            let mut m = BTreeMap::new();
-            for (k, v) in query
-                .split("&")
-                .filter(|s| s.trim().len() > 0)
-                .map(|s| split_str_to_pair(s, "="))
-            {
-                m.insert(k, v);
-            }
-            m
-        }
-        None => BTreeMap::new(),
-    }
-}
-
-fn split_str_to_pair(s: &str, splitter: &str) -> (String, String) {
-    let vec = s.splitn(2, splitter).collect::<Vec<&str>>();
-    let left = vec.get(0).map(|s| s.to_owned()).unwrap().to_owned();
-    let right = vec.get(1).map(|s| s.to_owned()).unwrap_or("").to_owned();
-    (left, right)
-}
-
 pub struct Renderer {
     handlebar: Handlebars,
 }
 
 impl Renderer {
     pub fn new() -> Renderer {
-        Renderer {
-            handlebar: Handlebars::new(),
-        }
+        let mut h = Handlebars::new();
+        h.register_helper("json", Box::new(to_json));
+        Renderer { handlebar: h }
     }
     pub fn render(&self, tpl: &str, ctx: &RequestContext) -> Result<String, String> {
         self.handlebar
@@ -69,7 +55,7 @@ impl Renderer {
 
 mod test {
     use super::*;
-    use serde_json::json;
+    use serde_json::from_str;
 
     #[test]
     fn can_render_a_plain_text() {
@@ -103,12 +89,25 @@ mod test {
     fn can_render_with_json_request_body() {
         let renderer = Renderer::new();
         let ctx = RequestContext {
-            body: Some(json!({"answer": 42})),
+            body: Some(from_str("{\"answer\": 42}").ok()).flatten(),
             path: BTreeMap::new(),
             params: BTreeMap::new(),
         };
         let tpl = "the answer = {{ body.answer }}";
         let r = renderer.render(tpl, &ctx);
         assert_eq!("the answer = 42", r.unwrap());
+    }
+
+    #[test]
+    fn can_render_with_json_objects() {
+        let renderer = Renderer::new();
+        let ctx = RequestContext {
+            body: Some(from_str("{\"answer\":42}").ok()).flatten(),
+            path: BTreeMap::new(),
+            params: BTreeMap::new(),
+        };
+        let tpl = "{{ json body }}";
+        let r = renderer.render(tpl, &ctx);
+        assert_eq!("{\"answer\":42}", r.unwrap());
     }
 }

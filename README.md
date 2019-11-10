@@ -14,26 +14,37 @@ $ surl server watch (TODO)
 ## request examples
 
 ```
-# mock a GET api that responses with a `OK`
+# mock a GET api that responses with a plain `OK`
 $ surl -XGET localhost:8080/api/health -d'OK'
 
 # mock a POST api that responses a json object and `content-type` header
 $ surl -XPOST -H'Content-Type:application/json' localhost:8080/api/items/2 -d'{"id": 2}'
 
-# mock a POST api that responses the original post payload, using jsonpath (TODO)
-$ surl -XPOST -d'$.' localhost:8080/api/items
+# mock a POST api that renders a response with the original post body.
+$ surl -XPOST -d'{{ json body }}' localhost:8080/api/items
 
-# extract response from a json object according to a path variable, using jsonpath (TODO)
-$ surl -XGET -d'{"id=1": {"id": 1}}' localhost:8080/api/items/:id
+# mock a GET api that renders a response with the query parameters.
+$ surl -XGET -d'{"id": {{params.id}} }' localhost:8080/api/items?id=1
 
 # render a response with a path variable (TODO)
-$ surl -XGET -d'{"id=1": {"id": 1}}' localhost:8080/api/items/:id
+$ surl -XGET -d'{"id": {{path.id}} }' localhost:8080/api/items/:id
+
+# render a response with a header value (TODO)
+$ surl -XGET -d'{"id": {{headers.id}} }' localhost:8080/api/items/:id
 
 # anything else?
 ```
 
-## see full arguments
+## usage
 
+see full help:
 ```
 surl -h
 ```
+
+### handlebarsjs templating
+The surl uses [handlebars-rust](https://github.com/sunng87/handlebars-rust) to render responses. The provided data/context contains the folowing field for each templating operation:
+- body: Some(Json), requested body if any (TOOD: the type of body field should conform to request content-type)
+- params: `Map<String,String>`, query params
+- path: `Map<String,String>`, path variables (TODO: implement this)
+- headers: `Map<String,String>`, requested headers (TODO: implement this)

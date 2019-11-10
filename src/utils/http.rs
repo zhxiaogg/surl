@@ -1,4 +1,5 @@
-use hyper::{Body, Response, StatusCode};
+use hyper::{Body, Response, StatusCode, Uri};
+use std::collections::BTreeMap;
 
 pub async fn body_to_str(body: &mut Body) -> Option<String> {
     match body.next().await {
@@ -36,4 +37,28 @@ pub fn not_found() -> Result<Response<Body>, hyper::Error> {
         .status(StatusCode::NOT_FOUND)
         .body(Body::empty())
         .unwrap())
+}
+
+pub fn decode_query_params(uri: &Uri) -> BTreeMap<String, String> {
+    match uri.query() {
+        Some(query) => {
+            let mut m = BTreeMap::new();
+            for (k, v) in query
+                .split("&")
+                .filter(|s| s.trim().len() > 0)
+                .map(|s| split_str_to_pair(s, "="))
+            {
+                m.insert(k, v);
+            }
+            m
+        }
+        None => BTreeMap::new(),
+    }
+}
+
+fn split_str_to_pair(s: &str, splitter: &str) -> (String, String) {
+    let vec = s.splitn(2, splitter).collect::<Vec<&str>>();
+    let left = vec.get(0).map(|s| s.to_owned()).unwrap().to_owned();
+    let right = vec.get(1).map(|s| s.to_owned()).unwrap_or("").to_owned();
+    (left, right)
 }

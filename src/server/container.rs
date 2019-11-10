@@ -21,8 +21,9 @@ impl ServiceContainer {
 
     pub async fn process(&mut self, req: Request<Body>) -> Result<Response<Body>, hyper::Error> {
         let id = HttpServiceId::from(&req);
+        let ctx = RequestContext::new(req).await;
         match self.service_infos.get(&id) {
-            Some(service) => self.create_response(service, &req),
+            Some(service) => self.create_response(service, &ctx),
             _ => not_found(),
         }
     }
@@ -30,20 +31,18 @@ impl ServiceContainer {
     fn create_response(
         &self,
         service: &HttpServiceInfo,
-        request: &Request<Body>,
+        ctx: &RequestContext,
     ) -> Result<Response<Body>, hyper::Error> {
         let mut b = Response::builder();
         for (k, v) in service.headers.iter() {
             b.header(k.trim(), v.as_ref().map_or("", String::as_ref).trim());
         }
         Ok(b.status(StatusCode::OK)
-            .body(self.body(service, request))
+            .body(self.body(service, ctx))
             .unwrap())
     }
 
-    fn body(&self, service: &HttpServiceInfo, request: &Request<Body>) -> Body {
-        let ctx = RequestContext::new(request);
-
+    fn body(&self, service: &HttpServiceInfo, ctx: &RequestContext) -> Body {
         let response = service.response.as_ref().map_or("", String::as_str);
 
         let renderer = Renderer::new();
