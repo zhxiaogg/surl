@@ -57,3 +57,4 @@ The surl uses [handlebars-rust](https://github.com/sunng87/handlebars-rust) to r
 The surl provides some built-in handlebars helper utilities:
 - json, render a non-primitive object into json string
 - timestamp, takes 0 params, returns current time in unix timestamp.
+- random|random_int, takes 0 params, returns a 32bit signed integer randomly.
