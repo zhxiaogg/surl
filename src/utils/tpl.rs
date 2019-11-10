@@ -33,3 +33,15 @@ pub fn unix_timestamp(
     out.write(now_in_seconds.to_string().as_ref())?;
     Ok(())
 }
+
+pub fn random_int(
+    h: &Helper,
+    _: &Handlebars,
+    _: &Context,
+    _: &mut RenderContext,
+    out: &mut dyn Output,
+) -> HelperResult {
+    let v = rand::random::<i32>();
+    out.write(v.to_string().as_ref())?;
+    Ok(())
+}

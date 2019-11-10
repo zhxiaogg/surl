@@ -1,5 +1,5 @@
 use crate::utils::http::*;
-use crate::utils::tpl::{to_json, unix_timestamp};
+use crate::utils::tpl::{random_int, to_json, unix_timestamp};
 use handlebars::Handlebars;
 use http::{Request, Uri};
 use hyper::Body;
@@ -44,6 +44,8 @@ impl Renderer {
         let mut h = Handlebars::new();
         h.register_helper("json", Box::new(to_json));
         h.register_helper("timestamp", Box::new(unix_timestamp));
+        h.register_helper("random", Box::new(random_int));
+        h.register_helper("random_int", Box::new(random_int));
         Renderer { handlebar: h }
     }
     pub fn render(&self, tpl: &str, ctx: &RequestContext) -> Result<String, String> {
