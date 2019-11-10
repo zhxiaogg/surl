@@ -1,10 +1,9 @@
 use crate::utils::http::*;
-use crate::utils::tpl::to_json;
+use crate::utils::tpl::{to_json, unix_timestamp};
 use handlebars::Handlebars;
 use http::{Request, Uri};
 use hyper::Body;
 use serde::Serialize;
-use serde_json::json;
 use serde_json::Value;
 use std::collections::BTreeMap;
 
@@ -44,6 +43,7 @@ impl Renderer {
     pub fn new() -> Renderer {
         let mut h = Handlebars::new();
         h.register_helper("json", Box::new(to_json));
+        h.register_helper("timestamp", Box::new(unix_timestamp));
         Renderer { handlebar: h }
     }
     pub fn render(&self, tpl: &str, ctx: &RequestContext) -> Result<String, String> {

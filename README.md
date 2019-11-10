@@ -56,4 +56,4 @@ The surl uses [handlebars-rust](https://github.com/sunng87/handlebars-rust) to r
 
 The surl provides some built-in handlebars helper utilities:
 - json, render a non-primitive object into json string
-- TODO
+- timestamp, takes 0 params, returns current time in unix timestamp.
