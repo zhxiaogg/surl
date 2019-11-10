@@ -42,9 +42,18 @@ see full help:
 surl -h
 ```
 
-### handlebarsjs templating
+## handlebarsjs templating
+
+### context
+
 The surl uses [handlebars-rust](https://github.com/sunng87/handlebars-rust) to render responses. The provided data/context contains the folowing field for each templating operation:
 - body: Some(Json), requested body if any (TOOD: the type of body field should conform to request content-type)
 - params: `Map<String,String>`, query params
 - path: `Map<String,String>`, path variables (TODO: implement this)
 - headers: `Map<String,String>`, requested headers (TODO: implement this)
+
+### helpers
+
+The surl provides some built-in handlebars helper utilities:
+- json, render a non-primitive object into json string
+- TODO
