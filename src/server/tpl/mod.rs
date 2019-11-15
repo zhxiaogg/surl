@@ -12,6 +12,7 @@ pub struct RequestContext {
     body: Option<Value>,
     path: BTreeMap<String, String>,
     params: BTreeMap<String, String>,
+    headers: BTreeMap<String, Option<String>>,
 }
 
 impl RequestContext {
@@ -23,10 +24,18 @@ impl RequestContext {
             .flatten();
         let params = decode_query_params(&parts.uri);
         let path_variables = decode_path_variables(&parts.uri);
+        let mut headers: BTreeMap<String, Option<String>> = BTreeMap::new();
+        for (name, value) in parts.headers.iter() {
+            headers.insert(
+                name.as_str().to_owned(),
+                value.to_str().ok().map(str::to_owned),
+            );
+        }
         RequestContext {
             body: body,
             path: path_variables,
             params: params,
+            headers: headers,
         }
     }
 }

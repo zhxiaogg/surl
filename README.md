@@ -29,8 +29,8 @@ $ surl -XGET -d'{"id": {{params.id}} }' localhost:8080/api/items?id=1
 # render a response with a path variable (TODO)
 $ surl -XGET -d'{"id": {{path.id}} }' localhost:8080/api/items/:id
 
-# render a response with a header value (TODO)
-$ surl -XGET -d'{"id": {{headers.id}} }' localhost:8080/api/items/:id
+# render a response with a header value
+$ surl -XGET -d'{"id": {{headers.id}} }' localhost:8080/api/items
 
 # anything else?
 ```
@@ -50,7 +50,7 @@ The surl uses [handlebars-rust](https://github.com/sunng87/handlebars-rust) to r
 - body: Some(Json), requested body if any (TOOD: the type of body field should conform to request content-type)
 - params: `Map<String,String>`, query params
 - path: `Map<String,String>`, path variables (TODO: implement this)
-- headers: `Map<String,String>`, requested headers (TODO: implement this)
+- headers: `Map<String,Option<String>>`, requested headers
 
 ### helpers
 
