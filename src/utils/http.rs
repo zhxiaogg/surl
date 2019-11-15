@@ -1,3 +1,4 @@
+use http::{HeaderMap, HeaderValue};
 use hyper::{Body, Response, StatusCode, Uri};
 use std::collections::BTreeMap;
 
@@ -61,4 +62,15 @@ fn split_str_to_pair(s: &str, splitter: &str) -> (String, String) {
     let left = vec.get(0).map(|s| s.to_owned()).unwrap().to_owned();
     let right = vec.get(1).map(|s| s.to_owned()).unwrap_or("").to_owned();
     (left, right)
+}
+
+pub fn decode_headers(header_map: &HeaderMap<HeaderValue>) -> BTreeMap<String, Option<String>> {
+    let mut headers: BTreeMap<String, Option<String>> = BTreeMap::new();
+    for (name, value) in header_map.iter() {
+        headers.insert(
+            name.as_str().to_owned(),
+            value.to_str().ok().map(str::to_owned),
+        );
+    }
+    headers
 }

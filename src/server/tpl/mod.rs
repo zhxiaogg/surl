@@ -1,7 +1,8 @@
+use crate::cmds::http::HttpServiceInfo;
 use crate::utils::http::*;
 use crate::utils::tpl::{random_int, to_json, unix_timestamp};
 use handlebars::Handlebars;
-use http::{Request, Uri};
+use http::Request;
 use hyper::Body;
 use serde::Serialize;
 use serde_json::Value;
@@ -16,32 +17,22 @@ pub struct RequestContext {
 }
 
 impl RequestContext {
-    pub async fn new(request: Request<Body>) -> RequestContext {
+    pub async fn new(service: &HttpServiceInfo, request: Request<Body>) -> RequestContext {
         let (parts, mut body) = request.into_parts();
         let body = body_to_str(&mut body).await;
         let body = body
             .map(|ref s| serde_json::from_str::<Value>(s).ok())
             .flatten();
         let params = decode_query_params(&parts.uri);
-        let path_variables = decode_path_variables(&parts.uri);
-        let mut headers: BTreeMap<String, Option<String>> = BTreeMap::new();
-        for (name, value) in parts.headers.iter() {
-            headers.insert(
-                name.as_str().to_owned(),
-                value.to_str().ok().map(str::to_owned),
-            );
-        }
+        let path_vars = service.extract_path_vars(parts.uri.path());
+        let headers = decode_headers(&parts.headers);
         RequestContext {
             body: body,
-            path: path_variables,
+            path: path_vars,
             params: params,
             headers: headers,
         }
     }
-}
-
-fn decode_path_variables(uri: &Uri) -> BTreeMap<String, String> {
-    BTreeMap::new()
 }
 
 pub struct Renderer {
@@ -75,6 +66,7 @@ mod test {
             body: None,
             path: BTreeMap::new(),
             params: BTreeMap::new(),
+            headers: BTreeMap::new(),
         };
         let tpl = "a simple test";
         let r = renderer.render(tpl, &ctx);
@@ -90,6 +82,7 @@ mod test {
             body: None,
             path: BTreeMap::new(),
             params: params,
+            headers: BTreeMap::new(),
         };
         let tpl = "the answer = {{ params.answer }}";
         let r = renderer.render(tpl, &ctx);
@@ -103,6 +96,7 @@ mod test {
             body: Some(from_str("{\"answer\": 42}").ok()).flatten(),
             path: BTreeMap::new(),
             params: BTreeMap::new(),
+            headers: BTreeMap::new(),
         };
         let tpl = "the answer = {{ body.answer }}";
         let r = renderer.render(tpl, &ctx);
@@ -116,6 +110,7 @@ mod test {
             body: Some(from_str("{\"answer\":42}").ok()).flatten(),
             path: BTreeMap::new(),
             params: BTreeMap::new(),
+            headers: BTreeMap::new(),
         };
         let tpl = "{{ json body }}";
         let r = renderer.render(tpl, &ctx);

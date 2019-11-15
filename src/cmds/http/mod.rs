@@ -1,6 +1,9 @@
+mod path_var;
+
 use super::RunnableCmd;
 use http::{Method, Uri};
 use hyper::{Body, Client, Request, StatusCode};
+use path_var::PathVarExtractor;
 use serde::{Deserialize, Serialize};
 use serde_json;
 use std::collections::BTreeMap;
@@ -19,6 +22,7 @@ pub struct HttpServiceInfo {
     pub url: String,
     pub response: Option<String>,
     pub headers: BTreeMap<String, Option<String>>,
+    path_var_extractor: Option<PathVarExtractor>,
 }
 
 #[derive(PartialEq, Eq, Hash)]
@@ -83,18 +87,42 @@ impl HttpServiceInfo {
     ) -> HttpServiceInfo {
         let method = Method::from_str(method_str).unwrap().as_ref().to_owned();
         let headers: BTreeMap<String, Option<String>> = HttpServiceInfo::create_header(header);
+        let uri = HttpServiceInfo::get_uri(url.as_str());
+        let path_var_extractor = PathVarExtractor::new(uri.path());
         HttpServiceInfo {
             method,
             url,
             response,
             headers,
+            path_var_extractor,
+        }
+    }
+
+    pub fn extract_path_vars(&self, uri: &str) -> BTreeMap<String, String> {
+        match &self.path_var_extractor {
+            Some(extractor) => extractor.extract_vars(uri),
+            None => BTreeMap::new(),
+        }
+    }
+
+    fn unify_uri(&self, uri: &str) -> String {
+        match &self.path_var_extractor {
+            Some(extractor) => extractor.unify(uri),
+            None => uri.to_owned(),
         }
     }
 
     pub fn id(&self) -> HttpServiceId {
         HttpServiceId {
             method: self.method.to_owned(),
-            uri: self.uri().path().to_owned(),
+            uri: self.unify_uri(self.uri().path()),
+        }
+    }
+
+    pub fn id_for_req(&self, req: &Request<Body>) -> HttpServiceId {
+        HttpServiceId {
+            method: req.method().as_str().to_owned(),
+            uri: self.unify_uri(req.uri().path()),
         }
     }
 
@@ -120,10 +148,14 @@ impl HttpServiceInfo {
     }
 
     pub fn uri(&self) -> Uri {
-        if self.url.contains("://") {
-            self.url.parse::<Uri>().unwrap()
+        HttpServiceInfo::get_uri(self.url.as_str())
+    }
+
+    fn get_uri(url: &str) -> Uri {
+        if url.contains("://") {
+            url.parse::<Uri>().unwrap()
         } else {
-            let url = format!("http://{}", self.url);
+            let url = format!("http://{}", url);
             let s: &str = url.as_ref();
             s.parse::<Uri>().unwrap()
         }

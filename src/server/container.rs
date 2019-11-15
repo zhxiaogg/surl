@@ -20,11 +20,23 @@ impl ServiceContainer {
     }
 
     pub async fn process(&mut self, req: Request<Body>) -> Result<Response<Body>, hyper::Error> {
-        let id = HttpServiceId::from(&req);
-        let ctx = RequestContext::new(req).await;
-        match self.service_infos.get(&id) {
-            Some(service) => self.create_response(service, &ctx),
+        match self.find_service(&req) {
+            Some(service) => {
+                let ctx = RequestContext::new(service, req).await;
+                self.create_response(service, &ctx)
+            }
             _ => not_found(),
+        }
+    }
+
+    fn find_service(&self, req: &Request<Body>) -> Option<&HttpServiceInfo> {
+        let id = HttpServiceId::from(&req);
+        match self.service_infos.get(&id) {
+            i @ Some(_) => i,
+            None => self
+                .service_infos
+                .values()
+                .find(|s| s.id_for_req(req) == s.id()),
         }
     }
 
