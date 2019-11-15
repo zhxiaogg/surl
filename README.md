@@ -1,7 +1,5 @@
 # surl "server URL"
 
-The api/server mocking tool that you'll fall in love in seconds.
-
 ## server directives
 
 ```
@@ -11,7 +9,7 @@ $ surl server list (TODO)
 $ surl server watch (TODO)
 ```
 
-## request examples
+## mocking examples
 
 ```
 # mock a GET api that responses with a plain text `OK`
@@ -20,10 +18,10 @@ $ surl -XGET localhost:8080/api/health -d'OK'
 # mock a POST api that responses a json object and `content-type` header
 $ surl -XPOST -H'Content-Type:application/json' localhost:8080/api/items/2 -d'{"id": 2}'
 
-# mock a POST api that renders response with requesting body.
+# render response with requested body
 $ surl -XPOST -d'{{ json body }}' localhost:8080/api/items
 
-# mock a GET api that renders response with the query parameters.
+# render response with query parameters
 $ surl -XGET -d'{"id": {{params.id}} }' localhost:8080/api/items?id=1
 
 # render response with path variables
@@ -35,9 +33,7 @@ $ surl -XGET -d'{"id": {{headers.id}} }' localhost:8080/api/items
 # anything else?
 ```
 
-## usage
-
-see full help:
+## full usage
 ```
 surl -h
 ```
