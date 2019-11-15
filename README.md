@@ -14,22 +14,22 @@ $ surl server watch (TODO)
 ## request examples
 
 ```
-# mock a GET api that responses with a plain `OK`
+# mock a GET api that responses with a plain text `OK`
 $ surl -XGET localhost:8080/api/health -d'OK'
 
 # mock a POST api that responses a json object and `content-type` header
 $ surl -XPOST -H'Content-Type:application/json' localhost:8080/api/items/2 -d'{"id": 2}'
 
-# mock a POST api that renders a response with the original post body.
+# mock a POST api that renders response with requesting body.
 $ surl -XPOST -d'{{ json body }}' localhost:8080/api/items
 
-# mock a GET api that renders a response with the query parameters.
+# mock a GET api that renders response with the query parameters.
 $ surl -XGET -d'{"id": {{params.id}} }' localhost:8080/api/items?id=1
 
-# render a response with a path variable (TODO)
+# render response with path variables
 $ surl -XGET -d'{"id": {{path.id}} }' localhost:8080/api/items/:id
 
-# render a response with a header value
+# render response with header values
 $ surl -XGET -d'{"id": {{headers.id}} }' localhost:8080/api/items
 
 # anything else?
@@ -49,7 +49,7 @@ surl -h
 The surl uses [handlebars-rust](https://github.com/sunng87/handlebars-rust) to render responses. The provided data/context contains the folowing field for each templating operation:
 - body: Some(Json), requested body if any (TOOD: the type of body field should conform to request content-type)
 - params: `Map<String,String>`, query params
-- path: `Map<String,String>`, path variables (TODO: implement this)
+- path: `Map<String,String>`, path variables
 - headers: `Map<String,Option<String>>`, requested headers
 
 ### helpers
