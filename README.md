@@ -47,7 +47,7 @@ surl -h
 ### context
 
 The surl uses [handlebars-rust](https://github.com/sunng87/handlebars-rust) to render responses. The provided data/context contains the folowing field for each templating operation:
-- body: Some(Json), requested body if any (TOOD: the type of body field should conform to request content-type)
+- body: `Some(Json)`, requested body if any (TOOD: the type of body field should conform to requested content-type)
 - params: `Map<String,String>`, query params
 - path: `Map<String,String>`, path variables
 - headers: `Map<String,Option<String>>`, requested headers
